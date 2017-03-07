@@ -204,7 +204,7 @@ uasan: clean
 	$(MAKE) test CC=clang MOREFLAGS="-g -fno-sanitize-recover -fsanitize=address -fsanitize=undefined"
 
 uasan-%: clean
-	LDFLAGS=-fuse-ld=gold CFLAGS="-Og -fsanitize=address -fsanitize=undefined" $(MAKE) -C $(TESTDIR) $*
+	LDFLAGS=-fuse-ld=gold CFLAGS="-Og -fno-sanitize-recover -fsanitize=address -fsanitize=undefined" $(MAKE) -C $(TESTDIR) $*
 
 apt-install:
 	sudo apt-get -yq --no-install-suggests --no-install-recommends --force-yes install $(APT_PACKAGES)

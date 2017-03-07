@@ -37,14 +37,14 @@ script:
   #  other feature branches => short tests (job numbers 1-2)
   - echo JOB_NUMBER=$JOB_NUMBER TRAVIS_BRANCH=$TRAVIS_BRANCH TRAVIS_EVENT_TYPE=$TRAVIS_EVENT_TYPE TRAVIS_PULL_REQUEST=$TRAVIS_PULL_REQUEST
   - if [ "$TRAVIS_EVENT_TYPE" = "cron" ] || [ "$TRAVIS_BRANCH" = "master" ]; then
-        export FUZZERTEST=-T5mn
-        export ZSTREAM_TESTTIME=-T5mn
-        export DECODECORPUS_TESTTIME=-T1mn
+        export FUZZERTEST=-T5mn;
+        export ZSTREAM_TESTTIME=-T5mn;
+        export DECODECORPUS_TESTTIME=-T1mn;
         sh -c "$Cmd" || travis_terminate 1;
     else
-        export FUZZERTEST=-T5mn
-        export ZSTREAM_TESTTIME=-T5mn
-        export DECODECORPUS_TESTTIME=-T1mn
+        export FUZZERTEST=-T5mn;
+        export ZSTREAM_TESTTIME=-T5mn;
+        export DECODECORPUS_TESTTIME=-T1mn;
         sh -c "$Cmd" || travis_terminate 1;
     fi
     #- if [ "$TRAVIS_EVENT_TYPE" = "cron" ] || [ "$TRAVIS_BRANCH" = "master" ]; then

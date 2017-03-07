@@ -5,20 +5,22 @@ matrix:
   fast_finish: true
   include:
     # Ubuntu 14.04
-    - env: Cmd="make libc6install && make -C tests test32"
-    - env: Cmd='make valgrindinstall arminstall ppcinstall arm-ppc-compilation && make clean lib && CFLAGS="-O1 -g" make -C zlibWrapper valgrindTest && make -C tests valgrindTest'
+    - env: Cmd='make gcc6install && make uasan-test-zstd'
+    - env: Cmd='make gcc6install libc6install && make uasan-test-zstd32'
 
-    - env: Cmd='CC=gcc-6 make gcc6install uasan-test'
-    - env: Cmd='CC=gcc-6 make gcc6install uasan-test32'
-    - env: Cmd="make arminstall armtest && make clean && make aarch64test"
-    - env: Cmd='make ppcinstall ppctest && make clean && make ppc64test'
-    - env: Cmd='make gpp6install zlibwrapper && make -C tests clean test-zstd-nolegacy && make -C tests versionsTest && make clean && cd contrib/pzstd && make test-pzstd && make test-pzstd32 && make test-pzstd-tsan && make test-pzstd-asan'
-      install:
-        - export CXX="g++-6" CC="gcc-6"
+    #- env: Cmd='make valgrindinstall arminstall ppcinstall arm-ppc-compilation && make clean lib && CFLAGS="-O1 -g" make -C zlibWrapper valgrindTest && make -C tests valgrindTest'
+
+    #- env: Cmd='CC=gcc-6 make gcc6install uasan-test'
+    #- env: Cmd='CC=gcc-6 make gcc6install uasan-test32'
+    #- env: Cmd="make arminstall armtest && make clean && make aarch64test"
+    #- env: Cmd='make ppcinstall ppctest && make clean && make ppc64test'
+    #- env: Cmd='make gpp6install zlibwrapper && make -C tests clean test-zstd-nolegacy && make -C tests versionsTest && make clean && cd contrib/pzstd && make test-pzstd && make test-pzstd32 && make test-pzstd-tsan && make test-pzstd-asan'
+    #  install:
+    #    - export CXX="g++-6" CC="gcc-6"
 
     # OS X Mavericks
-    - env: Cmd="make gnu90build && make clean && make test && make clean && make travis-install"
-      os: osx
+    #- env: Cmd="make gnu90build && make clean && make test && make clean && make travis-install"
+    #  os: osx
 
 git:
   depth: 1
@@ -35,13 +37,24 @@ script:
   #  other feature branches => short tests (job numbers 1-2)
   - echo JOB_NUMBER=$JOB_NUMBER TRAVIS_BRANCH=$TRAVIS_BRANCH TRAVIS_EVENT_TYPE=$TRAVIS_EVENT_TYPE TRAVIS_PULL_REQUEST=$TRAVIS_PULL_REQUEST
   - if [ "$TRAVIS_EVENT_TYPE" = "cron" ] || [ "$TRAVIS_BRANCH" = "master" ]; then
-        FUZZERTEST=-T7mn sh -c "$Cmd" || travis_terminate 1;
+        export FUZZERTEST=-T5mn
+        export ZSTREAM_TESTTIME=-T5mn
+        export DECODECORPUS_TESTTIME=-T1mn
+        sh -c "$Cmd" || travis_terminate 1;
     else
-        if [ "$TRAVIS_EVENT_TYPE" = "pull_request" ] && [ $JOB_NUMBER -lt 4 ]; then
-            sh -c "$Cmd" || travis_terminate 1;
-        else
-            if [ $JOB_NUMBER -lt 3 ]; then
-                sh -c "$Cmd" || travis_terminate 1;
-            fi
-        fi
+        export FUZZERTEST=-T5mn
+        export ZSTREAM_TESTTIME=-T5mn
+        export DECODECORPUS_TESTTIME=-T1mn
+        sh -c "$Cmd" || travis_terminate 1;
     fi
+    #- if [ "$TRAVIS_EVENT_TYPE" = "cron" ] || [ "$TRAVIS_BRANCH" = "master" ]; then
+    #    FUZZERTEST=-T7mn sh -c "$Cmd" || travis_terminate 1;
+    #else
+    #    if [ "$TRAVIS_EVENT_TYPE" = "pull_request" ] && [ $JOB_NUMBER -lt 4 ]; then
+    #        sh -c "$Cmd" || travis_terminate 1;
+    #    else
+    #        if [ $JOB_NUMBER -lt 3 ]; then
+    #            sh -c "$Cmd" || travis_terminate 1;
+    #        fi
+    #    fi
+    #fi

@@ -168,7 +168,7 @@ clangtest: clean
 
 armtest: clean
 	$(MAKE) -C $(TESTDIR) datagen   # use native, faster
-	$(MAKE) -C $(TESTDIR) test CC=arm-linux-gnueabi-gcc QEMU_SYS=qemu-arm-static ZSTDRTTEST= MOREFLAGS="-Werror -static"
+	$(MAKE) -C $(TESTDIR) test CC=arm-linux-gnueabi-gcc QEMU_SYS=qemu-arm-static MOREFLAGS="-Werror -static"
 
 aarch64test:
 	$(MAKE) -C $(TESTDIR) datagen   # use native, faster

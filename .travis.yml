@@ -5,8 +5,8 @@ matrix:
   fast_finish: true
   include:
     # Ubuntu 14.04
-    - env: Cmd='make gcc6install && make uasan-test-zstd'
-    - env: Cmd='make gcc6install libc6install && make uasan-test-zstd32'
+    - env: Cmd='make gcc6install && CC=gcc-6 make uasan-test-zstd'
+    - env: Cmd='make gcc6install libc6install && CC=gcc-6 make uasan-test-zstd32'
 
     #- env: Cmd='make valgrindinstall arminstall ppcinstall arm-ppc-compilation && make clean lib && CFLAGS="-O1 -g" make -C zlibWrapper valgrindTest && make -C tests valgrindTest'
 

@@ -168,7 +168,7 @@ clangtest: clean
 
 armtest: clean
 	$(MAKE) -C $(TESTDIR) datagen   # use native, faster
-	$(MAKE) -C $(TESTDIR) test CC=arm-linux-gnueabi-gcc QEMU_SYS=qemu-arm-static ZSTDRTTEST= MOREFLAGS="-Werror -static"
+	$(MAKE) -C $(TESTDIR) test CC=arm-linux-gnueabi-gcc QEMU_SYS=qemu-arm-static MOREFLAGS="-Werror -static"
 
 aarch64test:
 	$(MAKE) -C $(TESTDIR) datagen   # use native, faster
@@ -189,7 +189,7 @@ arm-ppc-compilation:
 	$(MAKE) -C $(PRGDIR) clean zstd CC=powerpc-linux-gnu-gcc QEMU_SYS=qemu-ppc64-static ZSTDRTTEST= MOREFLAGS="-m64 -static"
 
 usan: clean
-	$(MAKE) test CC=clang MOREFLAGS="-g -fsanitize=undefined"
+	$(MAKE) test CC=clang MOREFLAGS="-g -fno-sanitize-recover -fsanitize=undefined"
 
 asan: clean
 	$(MAKE) test CC=clang MOREFLAGS="-g -fsanitize=address"
@@ -201,10 +201,10 @@ asan32: clean
 	$(MAKE) -C $(TESTDIR) test32 CC=clang MOREFLAGS="-g -fsanitize=address"
 
 uasan: clean
-	$(MAKE) test CC=clang MOREFLAGS="-g -fsanitize=address -fsanitize=undefined"
+	$(MAKE) test CC=clang MOREFLAGS="-g -fno-sanitize-recover -fsanitize=address -fsanitize=undefined"
 
 uasan-%: clean
-	LDFLAGS=-fuse-ld=gold CFLAGS="-Og -fsanitize=address -fsanitize=undefined" $(MAKE) -C $(TESTDIR) $*
+	LDFLAGS=-fuse-ld=gold CFLAGS="-Og -fno-sanitize-recover -fsanitize=address -fsanitize=undefined" $(MAKE) -C $(TESTDIR) $*
 
 apt-install:
 	sudo apt-get -yq --no-install-suggests --no-install-recommends --force-yes install $(APT_PACKAGES)

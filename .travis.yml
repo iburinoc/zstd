@@ -1,3 +1,5 @@
+# Medium Tests: Run on all commits/PRs to dev branch
+
 language: c
 sudo: required
 dist: trusty
@@ -13,6 +15,8 @@ matrix:
     - env: Cmd='make gcc6install libc6install && CC=gcc-6 CFLAGS=-m32 make clean uasan-fuzztest'
     - env: Cmd='make clang38install && CC=clang-3.8 make clean msan-fuzztest'
     - env: Cmd='make clang38install && CC=clang-3.8 make clean tsan-test-zstream'
+
+    - env: Cmd='make valgrindinstall && make -C tests clean valgrindTest'
 
     - env: Cmd='make arminstall && make armfuzz'
     - env: Cmd='make arminstall && make aarch64fuzz'
@@ -43,21 +47,11 @@ branches:
 
 script:
   - JOB_NUMBER=$(echo $TRAVIS_JOB_NUMBER | sed -e 's:[0-9][0-9]*\.\(.*\):\1:')
-  #  cron & master          => full tests, as this is the final step towards a Release
-  #  pull requests          => normal tests (job numbers 1-3)
-  #  other feature branches => short tests (job numbers 1-2)
   - echo JOB_NUMBER=$JOB_NUMBER TRAVIS_BRANCH=$TRAVIS_BRANCH TRAVIS_EVENT_TYPE=$TRAVIS_EVENT_TYPE TRAVIS_PULL_REQUEST=$TRAVIS_PULL_REQUEST
-  - if [ "$TRAVIS_EVENT_TYPE" = "cron" ]; then
-        export FUZZERTEST=-T5mn;
-        export ZSTREAM_TESTTIME=-T5mn;
-        export DECODECORPUS_TESTTIME=-T1mn;
-        sh -c "$Cmd" || travis_terminate 1;
-    else
-        export FUZZERTEST=-T2mn;
-        export ZSTREAM_TESTTIME=-T2mn;
-        export DECODECORPUS_TESTTIME=-T1mn;
-        sh -c "$Cmd" || travis_terminate 1;
-    fi
+  - export FUZZERTEST=-T2mn;
+    export ZSTREAM_TESTTIME=-T2mn;
+    export DECODECORPUS_TESTTIME=-T1mn;
+    sh -c "$Cmd" || travis_terminate 1;
     #- if [ "$TRAVIS_EVENT_TYPE" = "cron" ] || [ "$TRAVIS_BRANCH" = "master" ]; then
     #    FUZZERTEST=-T7mn sh -c "$Cmd" || travis_terminate 1;
     #else

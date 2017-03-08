@@ -152,16 +152,16 @@ ppc64build: clean
 	CC=powerpc-linux-gnu-gcc CFLAGS="-m64 -Werror" $(MAKE) allarch
 
 armfuzz: clean
-	CC=arm-linux-gnueabi-gcc QEMU_SYS=qemu-arm-static $(MAKE) -C $(TESTDIR) fuzztest
+	CC=arm-linux-gnueabi-gcc QEMU_SYS=qemu-arm-static MOREFLAGS="-static" $(MAKE) -C $(TESTDIR) fuzztest
 
 aarch64fuzz: clean
-	CC=aarch64-linux-gnu-gcc QEMU_SYS=qemu-aarch64-static $(MAKE) -C $(TESTDIR) fuzztest
+	CC=aarch64-linux-gnu-gcc QEMU_SYS=qemu-aarch64-static MOREFLAGS="-static" $(MAKE) -C $(TESTDIR) fuzztest
 
 ppcfuzz: clean
-	CC=powerpc-linux-gnu-gcc QEMU_SYS=qemu-ppc-static $(MAKE) -C $(TESTDIR) fuzztest
+	CC=powerpc-linux-gnu-gcc QEMU_SYS=qemu-ppc-static MOREFLAGS="-static" $(MAKE) -C $(TESTDIR) fuzztest
 
 ppc64fuzz: clean
-	CC=powerpc-linux-gnu-gcc QEMU_SYS=qemu-ppc64-static MOREFLAGS="-m64" $(MAKE) -C $(TESTDIR) fuzztest
+	CC=powerpc-linux-gnu-gcc QEMU_SYS=qemu-ppc64-static MOREFLAGS="-m64 -static" $(MAKE) -C $(TESTDIR) fuzztest
 
 gpptest: clean
 	CC=g++ $(MAKE) -C $(PRGDIR) all CFLAGS="-O3 -Wall -Wextra -Wundef -Wshadow -Wcast-align -Werror"

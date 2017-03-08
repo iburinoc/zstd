@@ -10,6 +10,10 @@ matrix:
 
     - env: Cmd='make gcc6install && CC=gcc-6 make clean uasan-fuzztest'
     - env: Cmd='make gcc6install libc6install && CC=gcc-6 CFLAGS=-m32 make clean uasan-fuzztest'
+    - env: Cmd='CC=clang make clean msan-fuzztest'
+    - env: Cmd='CC=clang CFLAGS=-m32 make clean msan-fuzztest'
+    - env: Cmd='CC=clang make clean tsan-test-zstream'
+    - env: Cmd='CC=clang CFLAGS=-m32 make clean msan-test-zstream'
     - env: Cmd='make arminstall && make armfuzz'
     - env: Cmd='make arminstall && make aarch64fuzz'
     - env: Cmd='make arminstall && make ppcfuzz'

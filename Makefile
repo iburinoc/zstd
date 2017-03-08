@@ -209,15 +209,20 @@ asan: clean
 msan: clean
 	$(MAKE) test CC=clang MOREFLAGS="-g -fsanitize=memory -fno-omit-frame-pointer"   # datagen.c fails this test for no obvious reason
 
+msan-%: clean
+	LDFLAGS=-fuse-ld=gold MOREFLAGS="-fno-sanitize-recover -fsanitize=memory -fno-omit-frame-pointer" $(MAKE) -C $(TESTDIR) $*
+
 asan32: clean
 	$(MAKE) -C $(TESTDIR) test32 CC=clang MOREFLAGS="-g -fsanitize=address"
 
 uasan: clean
-	$(MAKE) test CC=clang MOREFLAGS="-g -fno-sanitize-recover -fsanitize=address -fsanitize=undefined"
+	$(MAKE) test CC=clang MOREFLAGS="-g -fno-sanitize-recover -fsanitize=address,undefined"
 
 uasan-%: clean
-	LDFLAGS=-fuse-ld=gold CFLAGS="-Og -fno-sanitize-recover -fsanitize=address -fsanitize=undefined" $(MAKE) -C $(TESTDIR) $*
+	LDFLAGS=-fuse-ld=gold MOREFLAGS="-Og -fno-sanitize-recover -fsanitize=address,undefined" $(MAKE) -C $(TESTDIR) $*
 
+tsan-%: clean
+	LDFLAGS=-fuse-ld=gold MOREFLAGS="-g -fno-sanitize-recover -fsanitize=thread" $(MAKE) -C $(TESTDIR) $*
 apt-install:
 	sudo apt-get -yq --no-install-suggests --no-install-recommends --force-yes install $(APT_PACKAGES)
 

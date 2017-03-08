@@ -201,7 +201,7 @@ arm-ppc-compilation:
 	$(MAKE) -C $(PRGDIR) clean zstd CC=powerpc-linux-gnu-gcc QEMU_SYS=qemu-ppc64-static ZSTDRTTEST= MOREFLAGS="-m64 -static"
 
 usan: clean
-	$(MAKE) test CC=clang MOREFLAGS="-g -fno-sanitize-recover -fsanitize=undefined"
+	$(MAKE) test CC=clang MOREFLAGS="-g -fno-sanitize-recover=all -fsanitize=undefined"
 
 asan: clean
 	$(MAKE) test CC=clang MOREFLAGS="-g -fsanitize=address"
@@ -210,19 +210,19 @@ msan: clean
 	$(MAKE) test CC=clang MOREFLAGS="-g -fsanitize=memory -fno-omit-frame-pointer"   # datagen.c fails this test for no obvious reason
 
 msan-%: clean
-	LDFLAGS=-fuse-ld=gold MOREFLAGS="-fno-sanitize-recover -fsanitize=memory -fno-omit-frame-pointer" $(MAKE) -C $(TESTDIR) $*
+	LDFLAGS=-fuse-ld=gold MOREFLAGS="-fno-sanitize-recover=all -fsanitize=memory -fno-omit-frame-pointer" $(MAKE) -C $(TESTDIR) $*
 
 asan32: clean
 	$(MAKE) -C $(TESTDIR) test32 CC=clang MOREFLAGS="-g -fsanitize=address"
 
 uasan: clean
-	$(MAKE) test CC=clang MOREFLAGS="-g -fno-sanitize-recover -fsanitize=address,undefined"
+	$(MAKE) test CC=clang MOREFLAGS="-g -fno-sanitize-recover=all -fsanitize=address,undefined"
 
 uasan-%: clean
-	LDFLAGS=-fuse-ld=gold MOREFLAGS="-Og -fno-sanitize-recover -fsanitize=address,undefined" $(MAKE) -C $(TESTDIR) $*
+	LDFLAGS=-fuse-ld=gold MOREFLAGS="-Og -fno-sanitize-recover=all -fsanitize=address,undefined" $(MAKE) -C $(TESTDIR) $*
 
 tsan-%: clean
-	LDFLAGS=-fuse-ld=gold MOREFLAGS="-g -fno-sanitize-recover -fsanitize=thread" $(MAKE) -C $(TESTDIR) $*
+	LDFLAGS=-fuse-ld=gold MOREFLAGS="-g -fno-sanitize-recover=all -fsanitize=thread" $(MAKE) -C $(TESTDIR) $*
 apt-install:
 	sudo apt-get -yq --no-install-suggests --no-install-recommends --force-yes install $(APT_PACKAGES)
 
@@ -247,6 +247,9 @@ gcc6install: apt-add-repo
 
 gpp6install: apt-add-repo
 	APT_PACKAGES="libc6-dev-i386 g++-multilib gcc-6 g++-6 g++-6-multilib" $(MAKE) apt-install
+
+clang38install:
+	APT_PACKAGES="clang-3.8" $(MAKE) apt-install
 
 endif
 

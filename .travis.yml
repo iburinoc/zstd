@@ -7,13 +7,13 @@ matrix:
     # Ubuntu 14.04
     - env: Cmd='make gcc6install && CC=gcc-6 make clean uasan-test-zstd'
     - env: Cmd='make gcc6install libc6install && CC=gcc-6 make clean uasan-test-zstd32'
+    - env: Cmd='make clang38install && CC=clang-3.8 make clean msan-test-zstd'
 
     - env: Cmd='make gcc6install && CC=gcc-6 make clean uasan-fuzztest'
     - env: Cmd='make gcc6install libc6install && CC=gcc-6 CFLAGS=-m32 make clean uasan-fuzztest'
-    - env: Cmd='CC=clang make clean msan-fuzztest'
-    - env: Cmd='CC=clang CFLAGS=-m32 make clean msan-fuzztest'
-    - env: Cmd='CC=clang make clean tsan-test-zstream'
-    - env: Cmd='CC=clang CFLAGS=-m32 make clean msan-test-zstream'
+    - env: Cmd='make clang38install && CC=clang-3.8 make clean msan-fuzztest'
+    - env: Cmd='make clang38install && CC=clang-3.8 make clean tsan-test-zstream'
+
     - env: Cmd='make arminstall && make armfuzz'
     - env: Cmd='make arminstall && make aarch64fuzz'
     - env: Cmd='make arminstall && make ppcfuzz'

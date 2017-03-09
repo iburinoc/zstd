@@ -7,9 +7,9 @@ matrix:
   fast_finish: true
   include:
     # Ubuntu 14.04
-    - env: Cmd='make gcc6install && CC=gcc-6 make clean uasan-test-zstd'
-    - env: Cmd='make gcc6install libc6install && CC=gcc-6 make clean uasan-test-zstd32'
-    - env: Cmd='make clang38install && CC=clang-3.8 make clean msan-test-zstd'
+    - env: Cmd='make gcc6install && CC=gcc-6 make clean uasan-test'
+    - env: Cmd='make gcc6install libc6install && CC=gcc-6 make clean uasan-test32'
+    - env: Cmd='make clang38install && CC=clang-3.8 make clean msan-test'
 
     - env: Cmd='make gcc6install && CC=gcc-6 make clean uasan-fuzztest'
     - env: Cmd='make gcc6install libc6install && CC=gcc-6 CFLAGS=-m32 make clean uasan-fuzztest'
@@ -18,10 +18,12 @@ matrix:
 
     - env: Cmd='make valgrindinstall && make -C tests clean valgrindTest'
 
-    - env: Cmd='make arminstall && make armfuzz'
-    - env: Cmd='make arminstall && make aarch64fuzz'
-    - env: Cmd='make ppcinstall && make ppcfuzz'
-    - env: Cmd='make ppcinstall && make ppc64fuzz'
+    - env: Cmd='make arminstall && make armtest'
+    - env: Cmd='make arminstall && make aarch64test'
+    - env: Cmd='make ppcinstall && make ppctest'
+    - env: Cmd='make ppcinstall && make ppc64test'
+
+
 
     #- env: Cmd='make valgrindinstall arminstall ppcinstall arm-ppc-compilation && make clean lib && CFLAGS="-O1 -g" make -C zlibWrapper valgrindTest && make -C tests valgrindTest'
 
@@ -29,13 +31,18 @@ matrix:
     #- env: Cmd='CC=gcc-6 make gcc6install uasan-test32'
     #- env: Cmd="make arminstall armtest && make clean && make aarch64test"
     #- env: Cmd='make ppcinstall ppctest && make clean && make ppc64test'
+    - env: Cmd='make gpp6install valgrindinstall && make -C zlibWrapper test valgrindTest'
+    - env: Cmd='make -C tests versionsTest'
+    - env: Cmd='make gpp6install && cd contrib/pzstd && make test-pzstd && make test-pzstd32 && make test-pzstd-tsan && make test-pzstd-asan'
+      install:
+        - export CXX="g++-6" CC="gcc-6"
+    - env: Cmd='gcc6install && CC=gcc-6 make uasan-test-zstd-nolegacy'
+    - env: Cmd='gcc6install && CC=gcc-6 make uasan-test-zbuff'
     #- env: Cmd='make gpp6install zlibwrapper && make -C tests clean test-zstd-nolegacy && make -C tests versionsTest && make clean && cd contrib/pzstd && make test-pzstd && make test-pzstd32 && make test-pzstd-tsan && make test-pzstd-asan'
-    #  install:
-    #    - export CXX="g++-6" CC="gcc-6"
 
     # OS X Mavericks
-    #- env: Cmd="make gnu90build && make clean && make test && make clean && make travis-install"
-    #  os: osx
+    - env: Cmd="make gnu90build && make clean && make test && make clean && make travis-install"
+      os: osx
 
 git:
   depth: 1
@@ -48,8 +55,8 @@ branches:
 script:
   - JOB_NUMBER=$(echo $TRAVIS_JOB_NUMBER | sed -e 's:[0-9][0-9]*\.\(.*\):\1:')
   - echo JOB_NUMBER=$JOB_NUMBER TRAVIS_BRANCH=$TRAVIS_BRANCH TRAVIS_EVENT_TYPE=$TRAVIS_EVENT_TYPE TRAVIS_PULL_REQUEST=$TRAVIS_PULL_REQUEST
-  - export FUZZERTEST=-T2mn;
-    export ZSTREAM_TESTTIME=-T2mn;
+  - export FUZZERTEST=-T5mn;
+    export ZSTREAM_TESTTIME=-T5mn;
     export DECODECORPUS_TESTTIME=-T1mn;
     sh -c "$Cmd" || travis_terminate 1;
     #- if [ "$TRAVIS_EVENT_TYPE" = "cron" ] || [ "$TRAVIS_BRANCH" = "master" ]; then

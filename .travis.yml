@@ -10,12 +10,7 @@ matrix:
     - env: Cmd='make gcc6install && CC=gcc-6 make clean uasan-test'
     - env: Cmd='make gcc6install libc6install && CC=gcc-6 make clean uasan-test32'
     - env: Cmd='make clang38install && CC=clang-3.8 make clean msan-test'
-
-    - env: Cmd='make gcc6install && CC=gcc-6 make clean uasan-fuzztest'
-    - env: Cmd='make gcc6install libc6install && CC=gcc-6 CFLAGS=-m32 make clean uasan-fuzztest'
-    - env: Cmd='make clang38install && CC=clang-3.8 make clean msan-fuzztest'
     - env: Cmd='make clang38install && CC=clang-3.8 make clean tsan-test-zstream'
-
     - env: Cmd='make valgrindinstall && make -C tests clean valgrindTest'
 
     - env: Cmd='make arminstall && make armtest'

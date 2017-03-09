@@ -24,11 +24,13 @@ else
 ALIGN_LOOP =
 endif
 
-CPPFLAGS+= -I$(ZSTDDIR) -I$(ZSTDDIR)/common -I$(ZSTDDIR)/compress -I$(ZSTDDIR)/dictBuilder
+CPPFLAGS+= -I$(ZSTDDIR) -I$(ZSTDDIR)/common -I$(ZSTDDIR)/compress \
+           -I$(ZSTDDIR)/dictBuilder \
+           -DXXH_NAMESPACE=ZSTD_   # because xxhash.o already compiled with this macro from library
 CFLAGS  ?= -O3
 DEBUGFLAGS = -g -Wall -Wextra -Wcast-qual -Wcast-align -Wshadow \
           -Wstrict-aliasing=1 -Wswitch-enum -Wdeclaration-after-statement \
-          -Wstrict-prototypes -Wundef -Wpointer-arith
+          -Wstrict-prototypes -Wundef -Wpointer-arith -Wformat-security
 CFLAGS  += $(DEBUGFLAGS) $(MOREFLAGS)
 FLAGS    = $(CPPFLAGS) $(CFLAGS) $(LDFLAGS)
 
@@ -67,9 +69,9 @@ endif
 
 # zlib detection
 VOID = /dev/null
-HAVE_ZLIB := $(shell echo "int main(){}" | $(CC) -o $(VOID) -x c - -lz 2> $(VOID) && echo 1 || echo 0)
+HAVE_ZLIB := $(shell printf '\#include <zlib.h>\nint main(){}' | $(CC) -o have_zlib -x c - -lz 2> $(VOID) && rm have_zlib$(EXT) && echo 1 || echo 0)
 ifeq ($(HAVE_ZLIB), 1)
-ZLIBCPP = -DZSTD_GZDECOMPRESS
+ZLIBCPP = -DZSTD_GZCOMPRESS -DZSTD_GZDECOMPRESS
 ZLIBLD = -lz
 endif
 
@@ -148,11 +150,11 @@ generate_res:
 	windres/generate_res.bat
 
 clean:
-	$(MAKE) -C ../lib clean
+	$(MAKE) -C $(ZSTDDIR) clean
 	@$(RM) $(ZSTDDIR)/decompress/*.o $(ZSTDDIR)/decompress/zstd_decompress.gcda
 	@$(RM) core *.o tmp* result* *.gcda dictionary *.zst \
         zstd$(EXT) zstd32$(EXT) zstd-compress$(EXT) zstd-decompress$(EXT) \
-        *.gcda default.profraw have_zlib
+        *.gcda default.profraw have_zlib$(EXT)
 	@echo Cleaning completed
 
 clean_decomp_o:

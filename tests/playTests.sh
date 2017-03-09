@@ -101,6 +101,8 @@ $ZSTD -f --rm tmp
 ls tmp && die "tmp should no longer be present"
 $ZSTD -f -d --rm tmp.zst
 ls tmp.zst && die "tmp.zst should no longer be present"
+$ECHO "test : --rm on stdin"
+$ECHO a | $ZSTD --rm > $INTOVOID   # --rm should remain silent
 rm tmp
 $ZSTD -f tmp && die "tmp not present : should have failed"
 ls tmp.zst && die "tmp.zst should not be created"
@@ -209,18 +211,19 @@ $ZSTD -f tmp1 notHere tmp2 && die "missing file not detected!"
 
 $ECHO "\n**** dictionary tests **** "
 
-TESTFILE=../programs/zstdcli.c
+$ECHO "- test with raw dict (content only) "
 ./datagen > tmpDict
 ./datagen -g1M | $MD5SUM > tmp1
 ./datagen -g1M | $ZSTD -D tmpDict | $ZSTD -D tmpDict -dvq | $MD5SUM > tmp2
 $DIFF -q tmp1 tmp2
-$ECHO "- Create first dictionary"
+$ECHO "- Create first dictionary "
+TESTFILE=../programs/zstdcli.c
 $ZSTD --train *.c ../programs/*.c -o tmpDict
 cp $TESTFILE tmp
 $ZSTD -f tmp -D tmpDict
 $ZSTD -d tmp.zst -D tmpDict -fo result
 $DIFF $TESTFILE result
-$ECHO "- Create second (different) dictionary"
+$ECHO "- Create second (different) dictionary "
 $ZSTD --train *.c ../programs/*.c ../programs/*.h -o tmpDictC
 $ZSTD -d tmp.zst -D tmpDictC -fo result && die "wrong dictionary not detected!"
 $ECHO "- Create dictionary with short dictID"
@@ -301,11 +304,33 @@ $ECHO "\n**** benchmark mode tests **** "
 
 $ECHO "bench one file"
 ./datagen > tmp1
-$ZSTD -bi1 tmp1
+$ZSTD -bi0 tmp1
 $ECHO "bench multiple levels"
-$ZSTD -i1b1e3 tmp1
+$ZSTD -i0b0e3 tmp1
 $ECHO "with recursive and quiet modes"
-$ZSTD -rqi1b1e3 tmp1
+$ZSTD -rqi1b1e2 tmp1
+
+
+$ECHO "\n**** gzip compatibility tests **** "
+
+GZIPMODE=1
+$ZSTD --format=gzip -V || GZIPMODE=0
+if [ $GZIPMODE -eq 1 ]; then
+    $ECHO "gzip support detected"
+    GZIPEXE=1
+    gzip -V || GZIPEXE=0
+    if [ $GZIPEXE -eq 1 ]; then
+        ./datagen > tmp
+        $ZSTD --format=gzip -f tmp
+        gzip -t -v tmp.gz
+        gzip -f tmp
+        $ZSTD -d -f -v tmp.gz
+    else
+        $ECHO "gzip binary not detected"
+    fi
+else
+    $ECHO "gzip mode not supported"
+fi
 
 
 $ECHO "\n**** zstd round-trip tests **** "
@@ -314,10 +339,10 @@ roundTripTest
 roundTripTest -g15K       # TableID==3
 roundTripTest -g127K      # TableID==2
 roundTripTest -g255K      # TableID==1
-roundTripTest -g513K      # TableID==0
-roundTripTest -g512K 6    # greedy, hash chain
-roundTripTest -g512K 16   # btlazy2
-roundTripTest -g512K 19   # btopt
+roundTripTest -g522K      # TableID==0
+roundTripTest -g519K 6    # greedy, hash chain
+roundTripTest -g517K 16   # btlazy2
+roundTripTest -g516K 19   # btopt
 
 rm tmp*
 

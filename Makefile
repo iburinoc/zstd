@@ -234,7 +234,7 @@ ppcinstall:
 	APT_PACKAGES="qemu-system-ppc qemu-user-static gcc-powerpc-linux-gnu" $(MAKE) apt-install
 
 arminstall:
-	APT_PACKAGES="qemu-system-arm qemu-user-static gcc-powerpc-linux-gnu gcc-arm-linux-gnueabi libc6-dev-armel-cross gcc-aarch64-linux-gnu libc6-dev-arm64-cross" $(MAKE) apt-install
+	APT_PACKAGES="qemu-system-arm qemu-user-static gcc-arm-linux-gnueabi libc6-dev-armel-cross gcc-aarch64-linux-gnu libc6-dev-arm64-cross" $(MAKE) apt-install
 
 valgrindinstall:
 	APT_PACKAGES="valgrind" $(MAKE) apt-install

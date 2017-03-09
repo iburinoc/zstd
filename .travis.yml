@@ -20,8 +20,8 @@ matrix:
 
     - env: Cmd='make arminstall && make armfuzz'
     - env: Cmd='make arminstall && make aarch64fuzz'
-    - env: Cmd='make arminstall && make ppcfuzz'
-    - env: Cmd='make arminstall && make ppc64fuzz'
+    - env: Cmd='make ppcinstall && make ppcfuzz'
+    - env: Cmd='make ppcinstall && make ppc64fuzz'
 
     #- env: Cmd='make valgrindinstall arminstall ppcinstall arm-ppc-compilation && make clean lib && CFLAGS="-O1 -g" make -C zlibWrapper valgrindTest && make -C tests valgrindTest'
 

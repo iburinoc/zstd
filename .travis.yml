@@ -53,6 +53,10 @@ script:
   - export FUZZERTEST=-T5mn;
     export ZSTREAM_TESTTIME=-T5mn;
     export DECODECORPUS_TESTTIME=-T1mn;
+    if [ "$TRAVIS_EVENT_TYPE" = "cron" ] || true; then
+        git fetch origin;
+        git checkout -qf FETCH_HEAD;
+    fi;
     sh -c "$Cmd" || travis_terminate 1;
     #- if [ "$TRAVIS_EVENT_TYPE" = "cron" ] || [ "$TRAVIS_BRANCH" = "master" ]; then
     #    FUZZERTEST=-T7mn sh -c "$Cmd" || travis_terminate 1;

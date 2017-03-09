@@ -1,4 +1,4 @@
-# Medium Tests: Run on all commits/PRs to dev branch
+# Long tests: run on commits to master branch/cron builds
 
 language: c
 sudo: required
@@ -20,12 +20,6 @@ matrix:
 
 
 
-    #- env: Cmd='make valgrindinstall arminstall ppcinstall arm-ppc-compilation && make clean lib && CFLAGS="-O1 -g" make -C zlibWrapper valgrindTest && make -C tests valgrindTest'
-
-    #- env: Cmd='CC=gcc-6 make gcc6install uasan-test'
-    #- env: Cmd='CC=gcc-6 make gcc6install uasan-test32'
-    #- env: Cmd="make arminstall armtest && make clean && make aarch64test"
-    #- env: Cmd='make ppcinstall ppctest && make clean && make ppc64test'
     - env: Cmd='make gpp6install valgrindinstall && make -C zlibWrapper test valgrindTest'
     - env: Cmd='make -C tests versionsTest'
     - env: Cmd='make gpp6install && cd contrib/pzstd && make test-pzstd && make test-pzstd32 && make test-pzstd-tsan && make test-pzstd-asan'
@@ -33,7 +27,6 @@ matrix:
         - export CXX="g++-6" CC="gcc-6"
     - env: Cmd='gcc6install && CC=gcc-6 make uasan-test-zstd-nolegacy'
     - env: Cmd='gcc6install && CC=gcc-6 make uasan-test-zbuff'
-    #- env: Cmd='make gpp6install zlibwrapper && make -C tests clean test-zstd-nolegacy && make -C tests versionsTest && make clean && cd contrib/pzstd && make test-pzstd && make test-pzstd32 && make test-pzstd-tsan && make test-pzstd-asan'
 
     # OS X Mavericks
     - env: Cmd="make gnu90build && make clean && make test && make clean && make travis-install"
@@ -53,19 +46,8 @@ script:
   - export FUZZERTEST=-T5mn;
     export ZSTREAM_TESTTIME=-T5mn;
     export DECODECORPUS_TESTTIME=-T1mn;
-    if [ "$TRAVIS_EVENT_TYPE" = "cron" ] || true; then
+    if [ "$TRAVIS_EVENT_TYPE" = "cron" ]; then
         git fetch origin;
         git checkout -qf FETCH_HEAD;
     fi;
     sh -c "$Cmd" || travis_terminate 1;
-    #- if [ "$TRAVIS_EVENT_TYPE" = "cron" ] || [ "$TRAVIS_BRANCH" = "master" ]; then
-    #    FUZZERTEST=-T7mn sh -c "$Cmd" || travis_terminate 1;
-    #else
-    #    if [ "$TRAVIS_EVENT_TYPE" = "pull_request" ] && [ $JOB_NUMBER -lt 4 ]; then
-    #        sh -c "$Cmd" || travis_terminate 1;
-    #    else
-    #        if [ $JOB_NUMBER -lt 3 ]; then
-    #            sh -c "$Cmd" || travis_terminate 1;
-    #        fi
-    #    fi
-    #fi

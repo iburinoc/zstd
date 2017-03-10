@@ -4,7 +4,6 @@ language: c
 sudo: required
 dist: trusty
 matrix:
-  fast_finish: true
   include:
     # Ubuntu 14.04
     - env: Cmd='make gcc6install && CC=gcc-6 make clean uasan-test-zstd'

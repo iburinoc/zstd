@@ -1,27 +1,42 @@
 version: 1.0.{build}
-environment:
-  matrix:
-  - COMPILER: "gcc"
-    PLATFORM: "mingw64"
-    MAKE_PARAMS: '"make test && make lib && make -C tests test-symbols fullbench-dll fullbench-lib"'
-  - COMPILER: "gcc"
-    PLATFORM: "mingw32"
-    MAKE_PARAMS: '"make -C tests test-zstd test-fullbench test-fuzzer test-invalidDictionaries"'
-  - COMPILER: "gcc"
-    PLATFORM: "clang"
-    MAKE_PARAMS: '"make -C tests zstd fullbench fuzzer paramgrill datagen CC=clang MOREFLAGS="--target=x86_64-w64-mingw32 -Werror -Wconversion -Wno-sign-conversion""'
-  - COMPILER: "visual"
-    CONFIGURATION: "Debug"
-    PLATFORM: "x64"
-  - COMPILER: "visual"
-    CONFIGURATION: "Debug"
-    PLATFORM: "Win32"
-  - COMPILER: "visual"
-    CONFIGURATION: "Release"
-    PLATFORM: "x64"
-  - COMPILER: "visual"
-    CONFIGURATION: "Release"
-    PLATFORM: "Win32"
+-
+  branches:
+    only:
+      - dev
+      - master
+  environment:
+    matrix:
+    - COMPILER: "gcc"
+      PLATFORM: "mingw64"
+      MAKE_PARAMS: '"make test && make lib && make -C tests test-symbols fullbench-dll fullbench-lib"'
+    - COMPILER: "gcc"
+      PLATFORM: "mingw32"
+      MAKE_PARAMS: '"make -C tests test-zstd test-fullbench test-fuzzer test-invalidDictionaries"'
+    - COMPILER: "gcc"
+      PLATFORM: "clang"
+      MAKE_PARAMS: '"make -C tests zstd fullbench fuzzer paramgrill datagen CC=clang MOREFLAGS="--target=x86_64-w64-mingw32 -Werror -Wconversion -Wno-sign-conversion""'
+    - COMPILER: "visual"
+      CONFIGURATION: "Debug"
+      PLATFORM: "x64"
+    - COMPILER: "visual"
+      CONFIGURATION: "Debug"
+      PLATFORM: "Win32"
+    - COMPILER: "visual"
+      CONFIGURATION: "Release"
+      PLATFORM: "x64"
+    - COMPILER: "visual"
+      CONFIGURATION: "Release"
+      PLATFORM: "Win32"
+
+-
+  branches:
+    only:
+      - ci
+  environment:
+    matrix:
+    - COMPILER: "gcc"
+      PLATFORM: "mingw64"
+      MAKE_PARAMS: '"make all"'
 
 install:
   - ECHO Installing %COMPILER% %PLATFORM% %CONFIGURATION%
@@ -145,11 +160,6 @@ test_script:
       fuzzer_VS2013_%PLATFORM%_Release.exe %FUZZERTEST% &&
       fuzzer_VS2015_%PLATFORM%_Release.exe %FUZZERTEST%
     )
-
-branches:
-  only:
-  - dev
-  - master
 
 artifacts:
   - path: bin\zstd.exe

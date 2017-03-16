@@ -15,6 +15,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <immintrin.h>
+
 /// Zstandard decompression functions.
 /// `dst` must point to a space at least as large as the reconstructed output.
 size_t ZSTD_decompress(void *const dst, const size_t dst_len,
@@ -1843,8 +1845,105 @@ static size_t HUF_decompress_1stream(const HUF_dtable *const dtable,
     return symbols_written;
 }
 
+static inline void HUF_reload_state_avx(const u8 *ptr, __m256i *state,
+                                        __m256i *bits_consumed, __m256i *offset,
+                                        const __m256i base)
+{
+    const __m256i bytes = _mm256_srli_epi64(*bits_consumed, 3);
+    *offset = _mm256_sub_epi64(*offset, bytes);
+    *bits_consumed = _mm256_and_si256(*bits_consumed, _mm256_set1_epi64x(7));
+    *state = _mm256_sllv_epi64(
+            _mm256_i64gather_epi64((void*)ptr, _mm256_add_epi64(base, *offset), 1),
+            *bits_consumed);
+}
+
+static size_t HUF_decompress_4stream_avx(const HUF_dtable *const dtable,
+                                         ostream_t *const out, istream_t *const in) {
+    const size_t regenerated_size = out->len;
+    const size_t full_segsize = (regenerated_size+3)/4;
+    const size_t iterations = regenerated_size - 3 * full_segsize;
+    const size_t extra = full_segsize - iterations;
+
+    const size_t csize0 = IO_read_bits(in, 16);
+    const size_t csize1 = IO_read_bits(in, 16);
+    const size_t csize2 = IO_read_bits(in, 16);
+    const size_t csize3 = in->len - csize0 - csize1 - csize2;
+
+    u8 *out0 = out->ptr;
+    u8 *out1 = out0 + full_segsize;
+    u8 *out2 = out1 + full_segsize;
+    u8 *out3 = out2 + full_segsize;
+
+    const u8 *ptr = in->ptr;
+
+    const size_t off0 = csize0;
+    const size_t off1 = off0+csize1;
+    const size_t off2 = off1+csize2;
+    const size_t off3 = off2+csize3;
+
+    const u8 bits = dtable->max_bits;
+    const u8 shift = 64 - bits;
+
+    const u64 padding0 = 8 - log2inf(ptr[off0 - 1]);
+    const u64 padding1 = 8 - log2inf(ptr[off1 - 1]);
+    const u64 padding2 = 8 - log2inf(ptr[off2 - 1]);
+    const u64 padding3 = 8 - log2inf(ptr[off3 - 1]);
+
+    __m256i bits_consumed =
+            _mm256_set_epi64x(padding3, padding2, padding1, padding0);
+
+    __m256i offsets = _mm256_set_epi64x(csize3-8, csize2-8, csize1-8, csize0-8);
+    const __m256i base = _mm256_set_epi64x(off2, off1, off0, 0);
+    __m256i state;
+    HUF_reload_state_avx(ptr, &state, &bits_consumed, &offsets, base);
+
+    for (int i = 0; i < extra; i++) {
+        /* do an iteration without lane 4 */
+        __m256i lshift = _mm256_set1_epi64x(0);
+        {
+            const u64 idx = (u64)_mm256_extract_epi64(state, 0) >> shift;
+            *out0++ = dtable->symbols[idx];
+            const int bits = dtable->num_bits[idx];
+            lshift = _mm256_insert_epi64(lshift, bits, 0);
+        }
+        {
+            const u64 idx = (u64)_mm256_extract_epi64(state, 1) >> shift;
+            *out1++ = dtable->symbols[idx];
+            const int bits = dtable->num_bits[idx];
+            lshift = _mm256_insert_epi64(lshift, bits, 1);
+        }
+        {
+            const u64 idx = (u64)_mm256_extract_epi64(state, 2) >> shift;
+            *out2++ = dtable->symbols[idx];
+            const int bits = dtable->num_bits[idx];
+            lshift = _mm256_insert_epi64(lshift, bits, 2);
+        }
+        state = _mm256_sllv_epi64(state, lshift);
+        bits_consumed = _mm256_add_epi64(bits_consumed, lshift);
+    }
+
+    for (size_t i = 0; i < iterations; i++) {
+        if (i % 4 == 0) HUF_reload_state_avx(ptr, &state, &bits_consumed, &offsets, base);
+        const __m256i idx = _mm256_srli_epi64(state, shift);
+        const __m128i symbs = _mm256_i64gather_epi32((void*)dtable->symbols, idx, 1);
+        *out0++ = _mm_extract_epi32(symbs, 0) & 0xff;
+        *out1++ = _mm_extract_epi32(symbs, 1) & 0xff;
+        *out2++ = _mm_extract_epi32(symbs, 2) & 0xff;
+        *out3++ = _mm_extract_epi32(symbs, 3) & 0xff;
+        const __m256i bits = _mm256_and_si256(
+                _mm256_set1_epi64x(0xff),
+                _mm256_i64gather_epi64((void*)dtable->num_bits, idx, 1));
+        state = _mm256_sllv_epi64(state, bits);
+        bits_consumed = _mm256_add_epi64(bits_consumed, bits);
+    }
+
+    return regenerated_size;
+}
+
 static size_t HUF_decompress_4stream(const HUF_dtable *const dtable,
                                      ostream_t *const out, istream_t *const in) {
+    int a = 1;
+    if(a) return HUF_decompress_4stream_avx(dtable, out, in);
     // "Compressed size is provided explicitly : in the 4-streams variant,
     // bitstreams are preceded by 3 unsigned little-endian 16-bits values. Each
     // value represents the compressed size of one stream, in order. The last
@@ -1899,8 +1998,8 @@ static void HUF_init_dtable(HUF_dtable *const table, const u8 *const bits,
 
     const size_t table_size = 1 << max_bits;
     table->max_bits = max_bits;
-    table->symbols = malloc(table_size);
-    table->num_bits = malloc(table_size);
+    table->symbols = malloc(table_size+8);
+    table->num_bits = malloc(table_size+8);
 
     if (!table->symbols || !table->num_bits) {
         free(table->symbols);

@@ -55,6 +55,8 @@
 *  Dependencies
 ****************************************************************/
 #include <string.h>     /* memcpy, memset */
+#include <stdio.h>
+#include <immintrin.h>
 #include "bitstream.h"  /* BIT_* */
 #include "fse.h"        /* header compression */
 #define HUF_STATIC_LINKING_ONLY
@@ -230,6 +232,301 @@ size_t HUF_decompress1X2 (void* dst, size_t dstSize, const void* cSrc, size_t cS
     return HUF_decompress1X2_DCtx (DTable, dst, dstSize, cSrc, cSrcSize);
 }
 
+typedef BYTE u8;
+typedef U32 u32;
+typedef U64 u64;
+
+static inline void HUF_reload_state_avx(const u8 *ptr, __m256i *state,
+                                        __m256i *bits_consumed, __m256i *offset,
+                                        const __m256i base)
+{
+    const __m256i bytes = _mm256_srli_epi64(*bits_consumed, 3);
+    *offset = _mm256_sub_epi64(*offset, bytes);
+    *bits_consumed = _mm256_and_si256(*bits_consumed, _mm256_set1_epi64x(7));
+    *state = _mm256_sllv_epi64(
+            _mm256_i64gather_epi64((const void*)ptr, _mm256_add_epi64(base, *offset), 1),
+            *bits_consumed);
+}
+
+static inline void HUF_flush_bytes_avx(__m256i state, u8 *o0, u8 *o1, u8 *o2, u8* o3, const int bytes)
+{
+    if (bytes == 8) {
+        MEM_writeLE64(o0, _mm256_extract_epi64(state, 0));
+        MEM_writeLE64(o1, _mm256_extract_epi64(state, 1));
+        MEM_writeLE64(o2, _mm256_extract_epi64(state, 2));
+        MEM_writeLE64(o3, _mm256_extract_epi64(state, 3));
+    } else {
+        if (bytes & 4) {
+            MEM_writeLE32(o0, _mm256_extract_epi32(state, 0));
+            MEM_writeLE32(o1, _mm256_extract_epi32(state, 2));
+            MEM_writeLE32(o2, _mm256_extract_epi32(state, 4));
+            MEM_writeLE32(o3, _mm256_extract_epi32(state, 6));
+            state = _mm256_srli_epi64(state, 32);
+        }
+        if (bytes & 2) {
+            MEM_writeLE16(o0, _mm256_extract_epi16(state, 0));
+            MEM_writeLE16(o1, _mm256_extract_epi16(state, 4));
+            MEM_writeLE16(o2, _mm256_extract_epi16(state, 8));
+            MEM_writeLE16(o3, _mm256_extract_epi16(state, 12));
+            state = _mm256_srli_epi64(state, 16);
+        }
+        if (bytes & 1) {
+            *o0 = _mm256_extract_epi8(state, 0);
+            *o1 = _mm256_extract_epi8(state, 8);
+            *o2 = _mm256_extract_epi8(state, 16);
+            *o3 = _mm256_extract_epi8(state, 24);
+        }
+    }
+}
+
+static size_t HUF_decompress4X2_usingDTable_internal_avx(
+          void* dst,  size_t dstSize,
+    const void* cSrc, size_t cSrcSize,
+    const HUF_DTable* DTable)
+{
+    const size_t regenerated_size = dstSize;
+    const size_t full_segsize = (regenerated_size+3)/4;
+    const size_t iterations = regenerated_size - 3 * full_segsize;
+    const size_t extra = full_segsize - iterations;
+
+    const BYTE* istart = (const BYTE*) cSrc;
+    const size_t csize0 = MEM_readLE16(istart);
+    const size_t csize1 = MEM_readLE16(istart + 2);
+    const size_t csize2 = MEM_readLE16(istart + 4);
+    const size_t csize3 = cSrcSize - csize0 - csize1 - csize2;
+
+    u8 *out0 = (BYTE*) dst;
+    u8 *out1 = out0 + full_segsize;
+    u8 *out2 = out1 + full_segsize;
+    u8 *out3 = out2 + full_segsize;
+
+    const u8 *ptr = (const BYTE*)cSrc + 6;
+
+    const size_t off0 = csize0;
+    const size_t off1 = off0+csize1;
+    const size_t off2 = off1+csize2;
+    const size_t off3 = off2+csize3;
+
+    const u64 padding0 = 8 - BIT_highbit32(ptr[off0 - 1]);
+    const u64 padding1 = 8 - BIT_highbit32(ptr[off1 - 1]);
+    const u64 padding2 = 8 - BIT_highbit32(ptr[off2 - 1]);
+    const u64 padding3 = 8 - BIT_highbit32(ptr[off3 - 1]);
+
+    const void* const dtPtr = DTable + 1;
+    const HUF_DEltX2* const dt = (const HUF_DEltX2*)dtPtr;
+    DTableDesc const dtd = HUF_getDTableDesc(DTable);
+
+    const u8 bits = dtd.tableLog;
+    const u8 shift = 64 - bits;
+
+    __m256i bits_consumed =
+            _mm256_set_epi64x(padding3, padding2, padding1, padding0);
+
+    __m256i offsets = _mm256_set_epi64x(csize3-8, csize2-8, csize1-8, csize0-8);
+    const __m256i base = _mm256_set_epi64x(off2, off1, off0, 0);
+    __m256i state;
+    __m256i to_flush = _mm256_set1_epi64x(0);
+
+    size_t i;
+
+    HUF_reload_state_avx(ptr, &state, &bits_consumed, &offsets, base);
+
+    for (i = 0; i < extra; i++) {
+        /* do an iteration without lane 4 */
+        __m256i lshift = _mm256_set1_epi64x(0);
+        {
+            const u64 idx = (u64)_mm256_extract_epi64(state, 0) >> shift;
+            *out0++ = dt[idx].byte;
+            const int nbbits = dt[idx].nbBits;
+            lshift = _mm256_insert_epi64(lshift, nbbits, 0);
+        }
+        {
+            const u64 idx = (u64)_mm256_extract_epi64(state, 1) >> shift;
+            *out1++ = dt[idx].byte;
+            const int nbbits = dt[idx].nbBits;
+            lshift = _mm256_insert_epi64(lshift, nbbits, 1);
+        }
+        {
+            const u64 idx = (u64)_mm256_extract_epi64(state, 2) >> shift;
+            *out2++ = dt[idx].byte;
+            const int nbbits = dt[idx].nbBits;
+            lshift = _mm256_insert_epi64(lshift, nbbits, 2);
+        }
+        state = _mm256_sllv_epi64(state, lshift);
+        bits_consumed = _mm256_add_epi64(bits_consumed, lshift);
+    }
+
+    for (i = 0; i < iterations; i++) {
+        if (i % 4 == 0) HUF_reload_state_avx(ptr, &state, &bits_consumed, &offsets, base);
+        const __m256i idx = _mm256_srli_epi64(state, shift);
+        const __m256i symbs = _mm256_i64gather_epi64(dtPtr, idx, 2);
+        to_flush = _mm256_or_si256(
+                to_flush,
+                _mm256_slli_epi64(_mm256_and_si256(_mm256_set1_epi64x(0xff), symbs),
+                            (i%8) * 8));
+        const __m256i nbbits = _mm256_and_si256(
+                _mm256_set1_epi64x(0xff),
+                _mm256_srli_epi64(symbs, 8));
+        state = _mm256_sllv_epi64(state, nbbits);
+        bits_consumed = _mm256_add_epi64(bits_consumed, nbbits);
+        if (i % 8 == 7) {
+            HUF_flush_bytes_avx(to_flush, out0, out1, out2, out3, 8);
+            out0 += 8;
+            out1 += 8;
+            out2 += 8;
+            out3 += 8;
+            to_flush = _mm256_set1_epi64x(0);
+        }
+    }
+
+    HUF_flush_bytes_avx(to_flush, out0, out1, out2, out3, i % 8);
+
+    return regenerated_size;
+}
+
+#if 0
+static inline void HUF_reload_state_sse(const u8 *ptr, __m128i *state,
+                                        __m128i *bits_consumed, __m128i *offset,
+                                        const __m128i base)
+{
+    const __m128i bytes = _mm_srli_epi32(*bits_consumed, 3);
+    *offset = _mm_sub_epi32(*offset, bytes);
+    *bits_consumed = _mm_and_si128(*bits_consumed, _mm_set1_epi32(7));
+    *state = _mm_sllv_epi32(
+            _mm_i32gather_epi32((const void*)ptr, _mm_add_epi32(base, *offset), 1),
+            *bits_consumed);
+}
+
+static inline void HUF_flush_bytes_sse(__m128i state, u8 *o0, u8 *o1, u8 *o2, u8* o3, const int bytes)
+{
+    if (bytes == 4) {
+        MEM_writeLE32(o0, _mm_extract_epi32(state, 0));
+        MEM_writeLE32(o1, _mm_extract_epi32(state, 1));
+        MEM_writeLE32(o2, _mm_extract_epi32(state, 2));
+        MEM_writeLE32(o3, _mm_extract_epi32(state, 3));
+    } else {
+        if (bytes & 2) {
+            MEM_writeLE16(o0, _mm_extract_epi16(state, 0));
+            MEM_writeLE16(o1, _mm_extract_epi16(state, 2));
+            MEM_writeLE16(o2, _mm_extract_epi16(state, 4));
+            MEM_writeLE16(o3, _mm_extract_epi16(state, 6));
+            state = _mm_srli_epi64(state, 16);
+        }
+        if (bytes & 1) {
+            *o0 = _mm_extract_epi8(state, 0);
+            *o1 = _mm_extract_epi8(state, 4);
+            *o2 = _mm_extract_epi8(state, 8);
+            *o3 = _mm_extract_epi8(state, 12);
+        }
+    }
+}
+
+static size_t HUF_decompress4X2_usingDTable_internal_sse(
+          void* dst,  size_t dstSize,
+    const void* cSrc, size_t cSrcSize,
+    const HUF_DTable* DTable)
+{
+    const size_t regenerated_size = dstSize;
+    const size_t full_segsize = (regenerated_size+3)/4;
+    const size_t iterations = regenerated_size - 3 * full_segsize;
+    const size_t extra = full_segsize - iterations;
+
+    const BYTE* istart = (const BYTE*) cSrc;
+    const size_t csize0 = MEM_readLE16(istart);
+    const size_t csize1 = MEM_readLE16(istart + 2);
+    const size_t csize2 = MEM_readLE16(istart + 4);
+    const size_t csize3 = cSrcSize - csize0 - csize1 - csize2;
+
+    u8 *out0 = (BYTE*) dst;
+    u8 *out1 = out0 + full_segsize;
+    u8 *out2 = out1 + full_segsize;
+    u8 *out3 = out2 + full_segsize;
+
+    const u8 *ptr = (const BYTE*)cSrc + 6;
+
+    const size_t off0 = csize0;
+    const size_t off1 = off0+csize1;
+    const size_t off2 = off1+csize2;
+    const size_t off3 = off2+csize3;
+
+    const u64 padding0 = 8 - BIT_highbit32(ptr[off0 - 1]);
+    const u64 padding1 = 8 - BIT_highbit32(ptr[off1 - 1]);
+    const u64 padding2 = 8 - BIT_highbit32(ptr[off2 - 1]);
+    const u64 padding3 = 8 - BIT_highbit32(ptr[off3 - 1]);
+
+    const void* const dtPtr = DTable + 1;
+    const HUF_DEltX2* const dt = (const HUF_DEltX2*)dtPtr;
+    DTableDesc const dtd = HUF_getDTableDesc(DTable);
+
+    const u8 bits = dtd.tableLog;
+    const u8 shift = 32 - bits;
+
+    __m128i bits_consumed =
+            _mm_set_epi32(padding3, padding2, padding1, padding0);
+
+    __m128i offsets = _mm_set_epi32(csize3-8, csize2-8, csize1-8, csize0-8);
+    const __m128i base = _mm_set_epi32(off2, off1, off0, 0);
+    __m128i state;
+    __m128i to_flush = _mm_set1_epi32(0);
+
+    size_t i;
+
+    HUF_reload_state_sse(ptr, &state, &bits_consumed, &offsets, base);
+
+    for (i = 0; i < extra; i++) {
+        /* do an iteration without lane 4 */
+        __m128i lshift = _mm_set1_epi32(0);
+        {
+            const u32 idx = (u32)_mm_extract_epi32(state, 0) >> shift;
+            *out0++ = dt[idx].byte;
+            const int nbbits = dt[idx].nbBits;
+            lshift = _mm_insert_epi32(lshift, nbbits, 0);
+        }
+        {
+            const u32 idx = (u32)_mm_extract_epi32(state, 1) >> shift;
+            *out1++ = dt[idx].byte;
+            const int nbbits = dt[idx].nbBits;
+            lshift = _mm_insert_epi32(lshift, nbbits, 1);
+        }
+        {
+            const u32 idx = (u32)_mm_extract_epi32(state, 2) >> shift;
+            *out2++ = dt[idx].byte;
+            const int nbbits = dt[idx].nbBits;
+            lshift = _mm_insert_epi32(lshift, nbbits, 2);
+        }
+        state = _mm_sllv_epi32(state, lshift);
+        bits_consumed = _mm_add_epi32(bits_consumed, lshift);
+    }
+
+    for (i = 0; i < iterations; i++) {
+        if (i % 2 == 0) HUF_reload_state_sse(ptr, &state, &bits_consumed, &offsets, base);
+        const __m128i idx = _mm_srli_epi32(state, shift);
+        const __m128i symbs = _mm_i32gather_epi32(dtPtr, idx, 2);
+        to_flush = _mm_or_si128(
+                to_flush,
+                _mm_slli_epi32(_mm_and_si128(_mm_set1_epi32(0xff), symbs),
+                            (i%4) * 4));
+        const __m128i nbbits = _mm_and_si128(
+                _mm_set1_epi32(0xff),
+                _mm_srli_epi32(symbs, 8));
+        state = _mm_sllv_epi32(state, nbbits);
+        bits_consumed = _mm_add_epi32(bits_consumed, nbbits);
+        if (i % 4 == 3) {
+            HUF_flush_bytes_sse(to_flush, out0, out1, out2, out3, 4);
+            out0 += 4;
+            out1 += 4;
+            out2 += 4;
+            out3 += 4;
+            to_flush = _mm_set1_epi32(0);
+        }
+    }
+
+    HUF_flush_bytes_sse(to_flush, out0, out1, out2, out3, i % 4);
+
+    return regenerated_size;
+}
+#endif
+
 
 static size_t HUF_decompress4X2_usingDTable_internal(
           void* dst,  size_t dstSize,
@@ -238,6 +535,8 @@ static size_t HUF_decompress4X2_usingDTable_internal(
 {
     /* Check */
     if (cSrcSize < 10) return ERROR(corruption_detected);  /* strict minimum : jump table + 1 byte per stream */
+
+    if (cSrcSize > 64) return HUF_decompress4X2_usingDTable_internal_avx(dst, dstSize, cSrc, cSrcSize, DTable);
 
     {   const BYTE* const istart = (const BYTE*) cSrc;
         BYTE* const ostart = (BYTE*) dst;

@@ -5,30 +5,11 @@ sudo: required
 dist: trusty
 matrix:
   include:
-    # Ubuntu 14.04
-    - env: Cmd='make gcc6install && CC=gcc-6 make clean uasan-test-zstd'
-    - env: Cmd='make gcc6install libc6install && CC=gcc-6 make clean uasan-test-zstd32'
-    - env: Cmd='make clang38install && CC=clang-3.8 make clean msan-test-zstd'
-
-    - env: Cmd='make gcc6install && CC=gcc-6 make clean uasan-fuzztest'
-    - env: Cmd='make gcc6install libc6install && CC=gcc-6 CFLAGS=-m32 make clean uasan-fuzztest'
-    - env: Cmd='make clang38install && CC=clang-3.8 make clean msan-fuzztest'
-    - env: Cmd='make clang38install && CC=clang-3.8 make clean tsan-test-zstream'
-
-    - env: Cmd='make valgrindinstall && make -C tests clean valgrindTest'
-
-    - env: Cmd='make arminstall && make armfuzz'
-    - env: Cmd='make arminstall && make aarch64fuzz'
-    - env: Cmd='make ppcinstall && make ppcfuzz'
-    - env: Cmd='make ppcinstall && make ppc64fuzz'
+    # Ubuntu 14.04e
+      - env: Cmd='make arminstall && cd tests && CC=aarch64-linux-gnu-gcc QEMU_SYS=qemu-aarch64-static MOREFLAGS=-static make zstreamtest && qemu-aarch64-static ./zstreamtest -T5mn -s7064'
 
 git:
   depth: 1
-
-branches:
-  only:
-  - dev
-  - master
 
 script:
   - JOB_NUMBER=$(echo $TRAVIS_JOB_NUMBER | sed -e 's:[0-9][0-9]*\.\(.*\):\1:')

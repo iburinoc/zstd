@@ -1,0 +1,35 @@
+-
+  version: 1.0.{build}
+  branches:
+    except:
+    - dev
+    - master
+  environment:
+    matrix:
+    - COMPILER: "gcc"
+      PLATFORM: "mingw"
+      ARCH:     "x64"
+    - COMPILER: "gcc"
+      PLATFORM: "mingw"
+      ARCH:     "x86"
+    - COMPILER: "clang"
+      PLATFORM: "mingw"
+      ARCH:     "x64"
+  install:
+  - ECHO Installing %COMPILER% %PLATFORM% %CONFIGURATION%
+  - if [%PLATFORM%]==[mingw] (
+      SET "PATH_MINGW32=C:\MinGW\bin;C:\MinGW\usr\bin" &&
+      SET "PATH_MINGW64=C:\msys64\mingw64\bin;C:\msys64\usr\bin"
+    )
+
+  build_script:
+  - ECHO Building %COMPILER% %PLATFORM% %CONFIGURATION%
+  - if [%PLATFORM%]==[mingw] (
+      if [%ARCH%]==[x64] (
+        SET PATH=%PATH_MINGW64%;%PATH%
+      ) else if [%ARCH%]==[x86] (
+        SET PATH=%PATH_MINGW32%;%PATH%
+      ) &&
+      sh -c 'make allarch'
+    )
+

@@ -160,7 +160,6 @@ deploy:
     branch: autobuild
     COMPILER: gcc
     PLATFORM: "mingw64"
-    appveyor_repo_tag: true
 - provider: GitHub
   auth_token:
     secure: LgJo8emYc3sFnlNWkGl4/VYK3nk/8+RagcsqDlAi3xeqNGNutnKjcftjg84uJoT4
@@ -170,4 +169,3 @@ deploy:
     branch: autobuild
     COMPILER: gcc
     PLATFORM: "mingw32"
-    appveyor_repo_tag: true

@@ -150,6 +150,7 @@ branches:
   only:
   - dev
   - master
+  - termtest
 
 artifacts:
   - path: bin\zstd.exe

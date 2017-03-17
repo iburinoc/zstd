@@ -33,6 +33,7 @@ case "$OS" in
   Windows*)
     isWindows=true
     ECHO="echo -e"
+    INTOVOID="NUL"
     ;;
 esac
 
@@ -252,7 +253,7 @@ $ZSTD -f tmp -D tmpDict1 --no-dictID
 $ZSTD -d tmp.zst -D tmpDict -fo result
 $DIFF $TESTFILE result
 $ECHO "- Compress with wrong argument order (must fail)"
-$ZSTD tmp -Df tmpDict1 -c > /dev/null && die "-D must be followed by dictionary name "
+$ZSTD tmp -Df tmpDict1 -c > $INTOVOID && die "-D must be followed by dictionary name "
 $ECHO "- Compress multiple files with dictionary"
 rm -rf dirTestDict
 mkdir dirTestDict

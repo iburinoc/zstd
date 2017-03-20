@@ -31,7 +31,7 @@
 
   install:
   - ECHO Installing %COMPILER% %PLATFORM% %CONFIGURATION%
-  - SET PATH_ORIGINAL=%PATH
+  - SET PATH_ORIGINAL=%PATH%
   - if [%PLATFORM%]==[mingw] (
       SET "PATH_MINGW32=C:\MinGW\bin;C:\MinGW\usr\bin" &&
       SET "PATH_MINGW64=C:\msys64\mingw64\bin;C:\msys64\usr\bin" &&

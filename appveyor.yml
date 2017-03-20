@@ -49,7 +49,7 @@ build_script:
       cc -v &&
       ECHO %MAKE_PARAMS% &&
       WHERE sh &&
-      ECHO %PATH% &&
+      ECHO "%PATH%" &&
       sh -c %MAKE_PARAMS%
     )
   - if [%PLATFORM%]==[clang] COPY tests\fuzzer.exe tests\fuzzer_clang.exe

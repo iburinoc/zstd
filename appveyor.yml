@@ -39,7 +39,7 @@
   install:
   - ECHO Installing %COMPILER% %PLATFORM% %CONFIGURATION%
   - SET PATH_ORIGINAL=%PATH%
-  - if [%PLATFORM%]==[mingw] (
+  - if [%HOST%]==[mingw] (
       SET "PATH_MINGW32=C:\MinGW\bin;C:\MinGW\usr\bin" &&
       SET "PATH_MINGW64=C:\msys64\mingw64\bin;C:\msys64\usr\bin" &&
       COPY C:\msys64\usr\bin\make.exe C:\MinGW\bin\make.exe &&
@@ -51,7 +51,7 @@
 
   build_script:
   - ECHO Building %COMPILER% %PLATFORM% %CONFIGURATION%
-  - if [%PLATFORM%]==[mingw] (
+  - if [%HOST%]==[mingw] (
       ( if [%PLATFORM%]==[x64] (
         SET "PATH=%PATH_MINGW64%;%PATH_ORIGINAL%"
       ) else if [%PLATFORM%]==[x86] (
@@ -61,7 +61,7 @@
       cc -v &&
       sh -c "CC=%COMPILER% %SCRIPT%"
     )
-  - if [%PLATFORM%]==[visual] (
+  - if [%HOST%]==[visual] (
       ECHO *** &&
       ECHO *** Building Visual Studio 2008 %PLATFORM%\%CONFIGURATION% in %APPVEYOR_BUILD_FOLDER% &&
       ECHO *** &&

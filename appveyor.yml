@@ -113,41 +113,6 @@ build_script:
       COPY build\VS2010\bin\%PLATFORM%_%CONFIGURATION%\*.exe tests\
     )
 
-test_script:
-  - ECHO Testing %COMPILER% %PLATFORM% %CONFIGURATION%
-  - SET FUZZERTEST=-T1mn
-  - if [%COMPILER%]==[gcc] if [%PLATFORM%]==[clang] (
-      tests\fuzzer_clang.exe %FUZZERTEST% &&
-      ECHO *** &&
-      ECHO *** Building cmake for %PLATFORM% &&
-      ECHO *** &&
-      mkdir build\cmake\build &&
-      cd build\cmake\build &&
-      cmake -G "Visual Studio 14 2015 Win64" .. &&
-      cd ..\..\.. &&
-      make clean &&
-      ECHO *** &&
-      ECHO *** Building pzstd for %PLATFORM% &&
-      ECHO *** &&
-      make -C contrib\pzstd googletest-mingw64 &&
-      make -C contrib\pzstd pzstd.exe &&
-      make -C contrib\pzstd tests &&
-      make -C contrib\pzstd check &&
-      make -C contrib\pzstd clean
-    )
-  - if [%COMPILER%]==[visual] if [%CONFIGURATION%]==[Release] (
-      CD tests &&
-      SET ZSTD=./zstd.exe &&
-      sh -e playTests.sh --test-large-data &&
-      fullbench.exe -i1 &&
-      fullbench.exe -i1 -P0 &&
-      fuzzer_VS2008_%PLATFORM%_Release.exe %FUZZERTEST% &&
-      fuzzer_VS2010_%PLATFORM%_Release.exe %FUZZERTEST% &&
-      fuzzer_VS2012_%PLATFORM%_Release.exe %FUZZERTEST% &&
-      fuzzer_VS2013_%PLATFORM%_Release.exe %FUZZERTEST% &&
-      fuzzer_VS2015_%PLATFORM%_Release.exe %FUZZERTEST%
-    )
-
 artifacts:
   - path: bin\zstd.exe
   - path: bin\zstd32.exe

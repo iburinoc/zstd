@@ -7,26 +7,30 @@
   environment:
     matrix:
     - COMPILER: "gcc"
-      PLATFORM: "mingw"
-      ARCH:     "x64"
+      HOST:     "mingw"
+      PLATFORM: "x64"
     - COMPILER: "gcc"
-      PLATFORM: "mingw"
-      ARCH:     "x86"
+      HOST:     "mingw"
+      PLATFORM: "x86"
     - COMPILER: "clang"
-      PLATFORM: "mingw"
-      ARCH:     "x64"
+      HOST:     "mingw"
+      PLATFORM: "x64"
 
-    - PLATFORM: "visual"
-      ARCH: "x64"
+    - COMPILER: "visual"
+      HOST:     "visual"
+      PLATFORM: "x64"
       CONFIGURATION: "Debug"
-    - PLATFORM: "visual"
-      ARCH: "x86"
+    - COMPILER: "visual"
+      HOST:     "visual"
+      PLATFORM: "x86"
       CONFIGURATION: "Debug"
-    - PLATFORM: "visual"
-      ARCH: "x64"
+    - COMPILER: "visual"
+      HOST:     "visual"
+      PLATFORM: "x64"
       CONFIGURATION: "Release"
-    - PLATFORM: "visual"
-      ARCH: "x86"
+    - COMPILER: "visual"
+      HOST:     "visual"
+      PLATFORM: "x86"
       CONFIGURATION: "Release"
 
   install:
@@ -38,21 +42,21 @@
       COPY C:\msys64\usr\bin\make.exe C:\MinGW\bin\make.exe &&
       COPY C:\MinGW\bin\gcc.exe C:\MinGW\bin\cc.exe
     )
-  - IF [%PLATFORM%]==[visual] IF [%ARCH%]==[x64] (
+  - IF [%PLATFORM%]==[visual] IF [%PLATFORM%]==[x64] (
       SET ADDITIONALPARAM=/p:LibraryPath="C:\Program Files\Microsoft SDKs\Windows\v7.1\lib\x64;c:\Program Files (x86)\Microsoft Visual Studio 10.0\VC\lib\amd64;C:\Program Files (x86)\Microsoft Visual Studio 10.0\;C:\Program Files (x86)\Microsoft Visual Studio 10.0\lib\amd64;"
     )
 
   build_script:
   - ECHO Building %COMPILER% %PLATFORM% %CONFIGURATION%
   - if [%PLATFORM%]==[mingw] (
-      ( if [%ARCH%]==[x64] (
+      ( if [%PLATFORM%]==[x64] (
         SET "PATH=%PATH_MINGW64%;%PATH_ORIGINAL%"
-      ) else if [%ARCH%]==[x86] (
+      ) else if [%PLATFORM%]==[x86] (
         SET "PATH=%PATH_MINGW32%;%PATH_ORIGINAL%"
       ) ) &&
       make -v &&
       cc -v &&
-      sh -c 'make allarch'
+      sh -c "CC=%COMPILER% make allarch"
     )
   - if [%PLATFORM%]==[visual] (
       ECHO *** &&

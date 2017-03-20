@@ -17,7 +17,7 @@
     - COMPILER: "clang"
       HOST:     "mingw"
       PLATFORM: "x64"
-      SCRIPT:   "MOREFLAGS='--target=x86-64-w64-mingw32 -Werror -Wconversion -Wno-sign-conversion' make allarch"
+      SCRIPT:   "MOREFLAGS='--target=x86_64-w64-mingw32 -Werror -Wconversion -Wno-sign-conversion' make allarch"
 
     - COMPILER: "visual"
       HOST:     "visual"

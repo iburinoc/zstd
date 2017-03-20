@@ -15,6 +15,20 @@
     - COMPILER: "clang"
       PLATFORM: "mingw"
       ARCH:     "x64"
+
+    - PLATFORM: "visual"
+      ARCH: "x64"
+      CONFIGURATION: "Debug"
+    - PLATFORM: "visual"
+      ARCH: "x86"
+      CONFIGURATION: "Debug"
+    - PLATFORM: "visual"
+      ARCH: "x64"
+      CONFIGURATION: "Release"
+    - PLATFORM: "visual"
+      ARCH: "x86"
+      CONFIGURATION: "Release"
+
   install:
   - ECHO Installing %COMPILER% %PLATFORM% %CONFIGURATION%
   - SET PATH_ORIGINAL=%PATH
@@ -23,6 +37,9 @@
       SET "PATH_MINGW64=C:\msys64\mingw64\bin;C:\msys64\usr\bin" &&
       COPY C:\msys64\usr\bin\make.exe C:\MinGW\bin\make.exe &&
       COPY C:\MinGW\bin\gcc.exe C:\MinGW\bin\cc.exe
+    )
+  - IF [%PLATFORM%]==[visual] IF [%ARCH%]==[x64] (
+      SET ADDITIONALPARAM=/p:LibraryPath="C:\Program Files\Microsoft SDKs\Windows\v7.1\lib\x64;c:\Program Files (x86)\Microsoft Visual Studio 10.0\VC\lib\amd64;C:\Program Files (x86)\Microsoft Visual Studio 10.0\;C:\Program Files (x86)\Microsoft Visual Studio 10.0\lib\amd64;"
     )
 
   build_script:
@@ -37,5 +54,55 @@
       cc -v &&
       echo %PATH% &&
       sh -c 'make allarch'
+    )
+  - if [%PLATFORM%]==[visual] (
+      ECHO *** &&
+      ECHO *** Building Visual Studio 2008 %PLATFORM%\%CONFIGURATION% in %APPVEYOR_BUILD_FOLDER% &&
+      ECHO *** &&
+      msbuild "build\VS2008\zstd.sln" /m /verbosity:minimal /property:PlatformToolset=v90 /t:Clean,Build /p:Platform=%PLATFORM% /p:Configuration=%CONFIGURATION% /logger:"C:\Program Files\AppVeyor\BuildAgent\Appveyor.MSBuildLogger.dll" &&
+      DIR build\VS2008\bin\%PLATFORM%\%CONFIGURATION%\*.exe &&
+      MD5sum build/VS2008/bin/%PLATFORM%/%CONFIGURATION%/*.exe &&
+      COPY build\VS2008\bin\%PLATFORM%\%CONFIGURATION%\fuzzer.exe tests\fuzzer_VS2008_%PLATFORM%_%CONFIGURATION%.exe &&
+      ECHO *** &&
+      ECHO *** Building Visual Studio 2010 %PLATFORM%\%CONFIGURATION% &&
+      ECHO *** &&
+      msbuild "build\VS2010\zstd.sln" %ADDITIONALPARAM% /m /verbosity:minimal /property:PlatformToolset=v100 /p:ForceImportBeforeCppTargets=%APPVEYOR_BUILD_FOLDER%\build\VS2010\CompileAsCpp.props /t:Clean,Build /p:Platform=%PLATFORM% /p:Configuration=%CONFIGURATION% /logger:"C:\Program Files\AppVeyor\BuildAgent\Appveyor.MSBuildLogger.dll" &&
+      DIR build\VS2010\bin\%PLATFORM%_%CONFIGURATION%\*.exe &&
+      MD5sum build/VS2010/bin/%PLATFORM%_%CONFIGURATION%/*.exe &&
+      msbuild "build\VS2010\zstd.sln" %ADDITIONALPARAM% /m /verbosity:minimal /property:PlatformToolset=v100 /t:Clean,Build /p:Platform=%PLATFORM% /p:Configuration=%CONFIGURATION% /logger:"C:\Program Files\AppVeyor\BuildAgent\Appveyor.MSBuildLogger.dll" &&
+      DIR build\VS2010\bin\%PLATFORM%_%CONFIGURATION%\*.exe &&
+      MD5sum build/VS2010/bin/%PLATFORM%_%CONFIGURATION%/*.exe &&
+      COPY build\VS2010\bin\%PLATFORM%_%CONFIGURATION%\fuzzer.exe tests\fuzzer_VS2010_%PLATFORM%_%CONFIGURATION%.exe &&
+      ECHO *** &&
+      ECHO *** Building Visual Studio 2012 %PLATFORM%\%CONFIGURATION% &&
+      ECHO *** &&
+      msbuild "build\VS2010\zstd.sln" /m /verbosity:minimal /property:PlatformToolset=v110 /p:ForceImportBeforeCppTargets=%APPVEYOR_BUILD_FOLDER%\build\VS2010\CompileAsCpp.props /t:Clean,Build /p:Platform=%PLATFORM% /p:Configuration=%CONFIGURATION% /logger:"C:\Program Files\AppVeyor\BuildAgent\Appveyor.MSBuildLogger.dll" &&
+      DIR build\VS2010\bin\%PLATFORM%_%CONFIGURATION%\*.exe &&
+      MD5sum build/VS2010/bin/%PLATFORM%_%CONFIGURATION%/*.exe &&
+      msbuild "build\VS2010\zstd.sln" /m /verbosity:minimal /property:PlatformToolset=v110 /t:Clean,Build /p:Platform=%PLATFORM% /p:Configuration=%CONFIGURATION% /logger:"C:\Program Files\AppVeyor\BuildAgent\Appveyor.MSBuildLogger.dll" &&
+      DIR build\VS2010\bin\%PLATFORM%_%CONFIGURATION%\*.exe &&
+      MD5sum build/VS2010/bin/%PLATFORM%_%CONFIGURATION%/*.exe &&
+      COPY build\VS2010\bin\%PLATFORM%_%CONFIGURATION%\fuzzer.exe tests\fuzzer_VS2012_%PLATFORM%_%CONFIGURATION%.exe &&
+      ECHO *** &&
+      ECHO *** Building Visual Studio 2013 %PLATFORM%\%CONFIGURATION% &&
+      ECHO *** &&
+      msbuild "build\VS2010\zstd.sln" /m /verbosity:minimal /property:PlatformToolset=v120 /p:ForceImportBeforeCppTargets=%APPVEYOR_BUILD_FOLDER%\build\VS2010\CompileAsCpp.props /t:Clean,Build /p:Platform=%PLATFORM% /p:Configuration=%CONFIGURATION% /logger:"C:\Program Files\AppVeyor\BuildAgent\Appveyor.MSBuildLogger.dll" &&
+      DIR build\VS2010\bin\%PLATFORM%_%CONFIGURATION%\*.exe &&
+      MD5sum build/VS2010/bin/%PLATFORM%_%CONFIGURATION%/*.exe &&
+      msbuild "build\VS2010\zstd.sln" /m /verbosity:minimal /property:PlatformToolset=v120 /t:Clean,Build /p:Platform=%PLATFORM% /p:Configuration=%CONFIGURATION% /logger:"C:\Program Files\AppVeyor\BuildAgent\Appveyor.MSBuildLogger.dll" &&
+      DIR build\VS2010\bin\%PLATFORM%_%CONFIGURATION%\*.exe &&
+      MD5sum build/VS2010/bin/%PLATFORM%_%CONFIGURATION%/*.exe &&
+      COPY build\VS2010\bin\%PLATFORM%_%CONFIGURATION%\fuzzer.exe tests\fuzzer_VS2013_%PLATFORM%_%CONFIGURATION%.exe &&
+      ECHO *** &&
+      ECHO *** Building Visual Studio 2015 %PLATFORM%\%CONFIGURATION% &&
+      ECHO *** &&
+      msbuild "build\VS2010\zstd.sln" /m /verbosity:minimal /property:PlatformToolset=v140 /p:ForceImportBeforeCppTargets=%APPVEYOR_BUILD_FOLDER%\build\VS2010\CompileAsCpp.props /t:Clean,Build /p:Platform=%PLATFORM% /p:Configuration=%CONFIGURATION% /logger:"C:\Program Files\AppVeyor\BuildAgent\Appveyor.MSBuildLogger.dll" &&
+      DIR build\VS2010\bin\%PLATFORM%_%CONFIGURATION%\*.exe &&
+      MD5sum build/VS2010/bin/%PLATFORM%_%CONFIGURATION%/*.exe &&
+      msbuild "build\VS2010\zstd.sln" /m /verbosity:minimal /property:PlatformToolset=v140 /t:Clean,Build /p:Platform=%PLATFORM% /p:Configuration=%CONFIGURATION% /logger:"C:\Program Files\AppVeyor\BuildAgent\Appveyor.MSBuildLogger.dll" &&
+      DIR build\VS2010\bin\%PLATFORM%_%CONFIGURATION%\*.exe &&
+      MD5sum build/VS2010/bin/%PLATFORM%_%CONFIGURATION%/*.exe &&
+      COPY build\VS2010\bin\%PLATFORM%_%CONFIGURATION%\fuzzer.exe tests\fuzzer_VS2015_%PLATFORM%_%CONFIGURATION%.exe &&
+      COPY build\VS2010\bin\%PLATFORM%_%CONFIGURATION%\*.exe tests\
     )
 

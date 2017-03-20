@@ -17,9 +17,12 @@
       ARCH:     "x64"
   install:
   - ECHO Installing %COMPILER% %PLATFORM% %CONFIGURATION%
+  - SET PATH_ORIGINAL=%PATH
   - if [%PLATFORM%]==[mingw] (
       SET "PATH_MINGW32=C:\MinGW\bin;C:\MinGW\usr\bin" &&
-      SET "PATH_MINGW64=C:\msys64\mingw64\bin;C:\msys64\usr\bin"
+      SET "PATH_MINGW64=C:\msys64\mingw64\bin;C:\msys64\usr\bin" &&
+      COPY C:\msys64\usr\bin\make.exe C:\MinGW\bin\make.exe &&
+      COPY C:\MinGW\bin\gcc.exe C:\MinGW\bin\cc.exe
     )
 
   build_script:
@@ -30,7 +33,6 @@
       ) else if [%ARCH%]==[x86] (
         SET PATH="%PATH_MINGW32%;%PATH%"
       ) ) &&
-      ECHO %PATH% &&
       sh -c 'make allarch'
     )
 

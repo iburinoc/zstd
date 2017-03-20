@@ -25,11 +25,12 @@
   build_script:
   - ECHO Building %COMPILER% %PLATFORM% %CONFIGURATION%
   - if [%PLATFORM%]==[mingw] (
-      if [%ARCH%]==[x64] (
+      ( if [%ARCH%]==[x64] (
         SET PATH="%PATH_MINGW64%;%PATH%"
       ) else if [%ARCH%]==[x86] (
         SET PATH="%PATH_MINGW32%;%PATH%"
-      ) &&
+      ) ) &&
+      ECHO %PATH% &&
       sh -c 'make allarch'
     )
 

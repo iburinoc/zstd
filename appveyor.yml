@@ -3,13 +3,13 @@ environment:
   matrix:
   - COMPILER: "gcc"
     PLATFORM: "mingw64"
-    MAKE_PARAMS: '"make test && make lib && make -C tests test-symbols fullbench-dll fullbench-lib"'
+    MAKE_PARAMS: '"make allarch && make lib"'
   - COMPILER: "gcc"
     PLATFORM: "mingw32"
-    MAKE_PARAMS: '"make -C tests test-zstd test-fullbench test-fuzzer test-invalidDictionaries"'
+    MAKE_PARAMS: '"make allarch"'
   - COMPILER: "gcc"
     PLATFORM: "clang"
-    MAKE_PARAMS: '"make -C tests zstd fullbench fuzzer paramgrill datagen CC=clang MOREFLAGS="--target=x86_64-w64-mingw32 -Werror -Wconversion -Wno-sign-conversion""'
+    MAKE_PARAMS: '"make -C allarch""'
   - COMPILER: "visual"
     CONFIGURATION: "Debug"
     PLATFORM: "x64"

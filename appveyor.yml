@@ -52,7 +52,6 @@
       ) ) &&
       make -v &&
       cc -v &&
-      echo "%PATH%" &&
       sh -c 'make allarch'
     )
   - if [%PLATFORM%]==[visual] (

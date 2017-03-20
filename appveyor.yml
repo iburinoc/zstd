@@ -47,9 +47,9 @@
   - if [%PLATFORM%]==[mingw] (
       ( if [%ARCH%]==[x64] (
         echo bill &&
-        echo "%PATH_ORIGINAL%"
-        echo "%PATH_MINGW64%"
-        SET "PATH=%PATH_MINGW64%;%PATH_ORIGINAL%"
+        echo "%PATH_ORIGINAL%" &&
+        echo "%PATH_MINGW64%" &&
+        SET "PATH=%PATH_MINGW64%;%PATH_ORIGINAL%" &&
         echo "%PATH%"
       ) else if [%ARCH%]==[x86] (
         SET "PATH=%PATH_MINGW32%;%PATH_ORIGINAL%"

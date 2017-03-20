@@ -29,9 +29,9 @@
   - ECHO Building %COMPILER% %PLATFORM% %CONFIGURATION%
   - if [%PLATFORM%]==[mingw] (
       ( if [%ARCH%]==[x64] (
-        SET PATH="%PATH_MINGW64%;%PATH%"
+        SET "PATH=%PATH_MINGW64%;%PATH_ORIGINAL%"
       ) else if [%ARCH%]==[x86] (
-        SET PATH="%PATH_MINGW32%;%PATH%"
+        SET "PATH=%PATH_MINGW32%;%PATH_ORIGINAL%"
       ) ) &&
       sh -c 'make allarch'
     )

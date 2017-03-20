@@ -73,6 +73,8 @@ all: fullbench fuzzer zstreamtest paramgrill datagen zbufftest
 
 all32: fullbench32 fuzzer32 zstreamtest32 zbufftest32
 
+allnothread: fullbench fuzzer paramgrill datagen zbufftest
+
 dll: fuzzer-dll zstreamtest-dll zbufftest-dll
 
 zstd:

@@ -58,7 +58,7 @@
         SET "PATH=%PATH_MINGW32%;%PATH_ORIGINAL%"
       ) ) &&
       make -v &&
-      cc -v &&
+      sh -c "%COMPILER% -v" &&
       sh -c "CC=%COMPILER% %SCRIPT%"
     )
   - if [%HOST%]==[visual] (

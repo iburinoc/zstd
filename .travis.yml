@@ -6,7 +6,7 @@ dist: trusty
 matrix:
   include:
     # Ubuntu 14.04
-    - env: Cmd='make zstd && cd tests && make datagen && ./datagen -g5000M > tmp && ../zstd tmp'
+    - env: Cmd='make zstd && cd tests && make datagen && ./datagen -g5000M > tmp && ../zstd tmp && shasum tmp && ./zstd -d tmp.zst | shasum'
 
 git:
   depth: 1

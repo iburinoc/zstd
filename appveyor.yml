@@ -29,4 +29,4 @@
         SET "PATH=%PATH_MINGW32%;%PATH_ORIGINAL%"
       ) )
     )
-  - SET "CC=%COMPILER%" && sh -c "make zstd && cd tests && make datagen && ./datagen.exe -g5000M > tmp && ../zstd.exe tmp"
+  - SET "CC=%COMPILER%" && sh -c "df && make zstd && cd tests && make datagen && ./datagen.exe -g5000M > tmp && ../zstd.exe tmp"

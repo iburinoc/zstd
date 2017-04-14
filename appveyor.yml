@@ -191,7 +191,7 @@
     - COMPILER: "gcc"
       HOST:     "mingw"
       PLATFORM: "x86"
-      SCRIPT:   "make lib && make zstd && make -C tests allarch && make clean zstdmt && ./zstdmt.exe -T0 -v"
+      SCRIPT:   "make allarch && make clean zstdmt && ./zstdmt.exe -T0 -v"
     - COMPILER: "clang"
       HOST:     "mingw"
       PLATFORM: "x64"

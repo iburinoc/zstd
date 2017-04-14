@@ -237,7 +237,8 @@
       ) ) &&
       make -v &&
       sh -c "%COMPILER% -v" &&
-      sh -c "CC=%COMPILER% %SCRIPT%"
+      set "CC=%COMPILER%" &&
+      sh -c "%SCRIPT%"
     )
   - if [%HOST%]==[visual] (
       ECHO *** &&
